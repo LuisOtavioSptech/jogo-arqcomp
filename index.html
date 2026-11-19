@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kernel Fighter & Cruzadinha — Arquitetura Computacional</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Efeito Scanlines CRT Retrô -->
+  <div class="crt-overlay"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="game-header">
+    <div class="brand">
+      <span class="pulse-dot"></span>
+      <h1>KERNEL FIGHTER <span class="subtitle">v3.0 // ARQCOMP</span></h1>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <nav class="mode-nav">
+      <button id="btnModeBattle" class="nav-btn active" onclick="switchMode('battle')">
+        <span class="icon">🥊</span> MODO BOSS BATTLE
+      </button>
+      <button id="btnModeCrossword" class="nav-btn" onclick="switchMode('crossword')">
+        <span class="icon">🧩</span> MODO CRUZADINHA
+      </button>
+      <button id="btnAudioToggle" class="nav-btn sound-btn" onclick="toggleAudio()" title="Ligar/Desligar Sons">
+        <span id="soundIcon">🔊</span> SOM: <span id="soundStatus">ON</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <!-- ============================================== -->
+    <!-- SECTION 1: MODO BOSS BATTLE (ARCADDE FIGHTER)  -->
+    <!-- ============================================== -->
+    <section id="battleSection" class="game-section active-section">
+      <!-- Top HUD: Life Bars -->
+      <div class="hud-container">
+        <!-- Player Status -->
+        <div class="fighter-status player-side">
+          <div class="fighter-header">
+            <span class="fighter-name">BYTE WARRIOR (VOCÊ)</span>
+            <div class="lives-box" id="playerLives">
+              <span class="heart active">❤️</span>
+              <span class="heart active">❤️</span>
+              <span class="heart active">❤️</span>
+            </div>
+          </div>
+          <div class="hp-bar-outer">
+            <div id="playerHpBar" class="hp-bar-inner player-hp" style="width: 100%;"></div>
+          </div>
+          <div class="sub-stat">TENTATIVAS: <span id="livesText">3/3</span> RESTANTES</div>
+        </div>
+
+        <!-- VS Badge & Combo -->
+        <div class="vs-center">
+          <div class="vs-badge">VS</div>
+          <div id="comboBanner" class="combo-banner hidden">COMBO x2!</div>
+        </div>
+
+        <!-- Boss Status -->
+        <div class="fighter-status boss-side">
+          <div class="fighter-header">
+            <span class="fighter-name boss-name">GLITCH OVERLORD (KERNEL PANIC)</span>
+            <span class="boss-level">LVL.16 BOSS</span>
+          </div>
+          <div class="hp-bar-outer">
+            <div id="bossHpBar" class="hp-bar-inner boss-hp" style="width: 100%;"></div>
+          </div>
+          <div class="sub-stat">INTEGRIDADE DO BOSS: <span id="bossHpText">16/16</span></div>
+        </div>
+      </div>
+
+      <!-- Fighting Arena (Visual Canvas Stage) -->
+      <div class="arena-stage" id="arenaStage">
+        <!-- Background Decor: Motherboard circuits & chips -->
+        <div class="circuit-grid"></div>
+        <div class="danger-flash" id="dangerFlash"></div>
+
+        <!-- Canvas for Dynamic Particle & FX Animations -->
+        <canvas id="fxCanvas"></canvas>
+
+        <!-- Player Visual Character -->
+        <div class="fighter-sprite player-sprite" id="playerSprite">
+          <div class="sprite-body hero">
+            <div class="hero-head">
+              <div class="hero-visor"></div>
+            </div>
+            <div class="hero-torso">
+              <div class="core-gem"></div>
+            </div>
+            <div class="hero-fist left"></div>
+            <div class="hero-fist right"></div>
+            <div class="hero-legs"></div>
+          </div>
+          <div class="sprite-shadow"></div>
+          <div class="action-balloon" id="playerActionBalloon">HADOUKEN!</div>
+        </div>
+
+        <!-- Boss Visual Character -->
+        <div class="fighter-sprite boss-sprite" id="bossSprite">
+          <div class="sprite-body boss">
+            <div class="boss-aura"></div>
+            <div class="boss-horns"></div>
+            <div class="boss-head">
+              <div class="boss-eye-glow"></div>
+            </div>
+            <div class="boss-torso">
+              <div class="cpu-socket">
+                <span class="chip-label">ERROR</span>
+              </div>
+            </div>
+            <div class="boss-claw left"></div>
+            <div class="boss-claw right"></div>
+            <div class="boss-legs"></div>
+          </div>
+          <div class="sprite-shadow"></div>
+          <div class="action-balloon boss-balloon" id="bossActionBalloon">ACCESS DENIED!</div>
+        </div>
+
+        <!-- Round/Fight Notification Popup -->
+        <div id="roundAnnouncement" class="announcement-overlay hidden">
+          <h2 id="announcementTitle">ROUND 1</h2>
+          <p id="announcementSubtitle">FIGHT!</p>
+        </div>
+      </div>
+
+      <!-- Question & Attack Controls Terminal -->
+      <div class="terminal-combat">
+        <div class="terminal-header">
+          <span class="terminal-title">TERMINAL DE COMANDOS DE ARQUITETURA // SPRINT 3</span>
+          <span class="step-indicator" id="stepIndicator">TERMO 1 DE 16</span>
+        </div>
+
+        <div class="clue-display-box">
+          <div class="clue-label">🎯 PISTA DO SISTEMA:</div>
+          <div class="clue-text" id="clueText">Carregando pista...</div>
+        </div>
+
+        <!-- Input Box and Slots Preview -->
+        <div class="attack-controls">
+          <div class="slots-container" id="slotsContainer" title="Quantidade de letras da palavra">
+            <!-- Dynamic letter slots: _ _ _ -->
+          </div>
+
+          <div class="input-row">
+            <input 
+              type="text" 
+              id="termInput" 
+              class="cyber-input" 
+              placeholder="DIGITE O TERMO CORRESPONDENTE..." 
+              autocomplete="off" 
+              autocapitalize="characters" 
+              spellcheck="false"
+              maxlength="25"
+            >
+            <button id="btnAttack" class="btn-attack" onclick="handleAttackSubmit()">
+              💥 DESFERIR GOLPE
+            </button>
+            <button id="btnHint" class="btn-hint" onclick="requestHint()" title="Revela a primeira letra">
+              💡 DICA CACHE
+            </button>
+          </div>
+
+          <div class="feedback-msg" id="feedbackMsg">Digite o termo correto e clique em "Desferir Golpe" ou aperte [ENTER]!</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- SECTION 2: MODO CRUZADINHA (REQUISITOS SPTECH) -->
+    <!-- ============================================== -->
+    <section id="crosswordSection" class="game-section">
+      <div class="crossword-header-bar">
+        <div class="cw-info">
+          <h2>CRUZADINHA DE ARQUITETURA COMPUTACIONAL</h2>
+          <p>Preencha as casas com as letras maiúsculas. Todas as 16 palavras estão interligadas no tabuleiro!</p>
+        </div>
+        <div class="cw-actions">
+          <div class="score-badge" id="cwScoreBadge">0 de 16 palavras certas</div>
+          <button class="cw-btn btn-check" onclick="checkCrossword()">
+            ✅ CONFERIR
+          </button>
+          <button class="cw-btn btn-reset" onclick="resetCrossword()">
+            🔄 REINICIAR
+          </button>
+        </div>
+      </div>
+
+      <div class="crossword-body">
+        <!-- Tabuleiro Interativo -->
+        <div class="board-wrapper">
+          <div id="crosswordBoard" class="crossword-grid">
+            <!-- Grid de células renderizado dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Lista de Pistas Horizontais e Verticais -->
+        <div class="clues-panel">
+          <div class="clue-column">
+            <h3 class="clue-col-title">➡ HORIZONTAIS</h3>
+            <ul id="horizontalCluesList" class="clues-list">
+              <!-- Renderizado via JS -->
+            </ul>
+          </div>
+          <div class="clue-column">
+            <h3 class="clue-col-title">⬇ VERTICAIS</h3>
+            <ul id="verticalCluesList" class="clues-list">
+              <!-- Renderizado via JS -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL / POPUP: VITÓRIA OU DERROTA -->
+  <div id="endGameModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-banner" id="modalBanner">VICTORY!</div>
+      <h2 id="modalTitle">O KERNEL FOI SALVO!</h2>
+      <p id="modalDesc">Você acertou todos os termos e destruiu o Glitch Overlord!</p>
+      
+      <div class="stats-summary" id="modalStats">
+        <!-- Estatísticas da partida -->
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn-attack" onclick="restartBattle()">🔄 JOGAR NOVAMENTE</button>
+        <button class="btn-hint" onclick="switchMode('crossword'); closeModal();">🧩 IR PARA A CRUZADINHA</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="game-footer">
+    <p>Projeto de Arquitetura Computacional • SPTECH • Desenvolvido com HTML, CSS e JavaScript Puro</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
